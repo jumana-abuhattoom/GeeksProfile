@@ -1,0 +1,171 @@
+# geeks-project deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: geeksproject
+  labels:
+    app: geeksproject
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: geeksproject
+  template:
+    metadata:
+      labels:
+        app: geeksproject
+    spec:
+      containers:
+        - name: geeksproject
+          image: jumanaah/geeksproject:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: MYSQL_HOST
+            - name: MYSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: MYSQL_PASSWORD
+---
+# geeks-project service
+apiVersion: v1
+kind: Service
+metadata:
+  name: geeksproject-service
+spec:
+  type: ClusterIP
+  selector:
+    app: geeksproject
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+#MYSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  labels:
+    app: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+        - name: database
+          image: mysql:5.7
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-init
+              mountPath: /docker-entrypoint-initdb.d
+            - name: mysql-pvc
+              mountPath: /var/lib/mysql
+          env:
+            - name: MYSQL_ROOT_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: MYSQL_USER
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: MYSQL_PASSWORD
+      volumes:
+        - name: mysql-init
+          configMap:
+            name: config
+        - name: mysql-pvc
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+---
+# MYSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  type: ClusterIP
+  selector:
+    app: database
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+# MYSQL ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS `geekproject` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+    USE `geekproject`;
+    CREATE TABLE IF NOT EXISTS `accounts` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) NOT NULL,
+      `password` varchar(255) NOT NULL,
+      `email` varchar(100) NOT NULL,
+      `organisation` varchar(100) NOT NULL,
+      `address` varchar(100) NOT NULL,
+      `city` varchar(100) NOT NULL,
+      `state` varchar(100) NOT NULL,
+      `country` varchar(100) NOT NULL,
+      `postalcode` varchar(100) NOT NULL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+  MYSQL_HOST: "mysql"
+  MYSQL_USER: "root"
+  MYSQL_PASSWORD: "password"
+---
+#PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: mysql-pvc
+
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+#Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: geeksproject-service
+                port:
+                  number: 8080
