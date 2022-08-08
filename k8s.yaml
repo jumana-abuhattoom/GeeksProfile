@@ -2,22 +2,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: geeksproject
+  name: geeksprofile
   labels:
-    app: geeksproject
+    app: geeksprofile
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: geeksproject
+      app: geeksprofile
   template:
     metadata:
       labels:
-        app: geeksproject
+        app: geeksprofile
     spec:
       containers:
-        - name: geeksproject
-          image: jumanaah/geeksproject:latest
+        - name: geeksprofile
+          image: jumanaah/geeksprofile:latest
           ports:
             - containerPort: 8080
           env:
@@ -37,15 +37,15 @@ spec:
                   name: config
                   key: MYSQL_PASSWORD
 ---
-# geeks-project service
+# geeksprofile service
 apiVersion: v1
 kind: Service
 metadata:
-  name: geeksproject-service
+  name: geeksprofile-service
 spec:
   type: ClusterIP
   selector:
-    app: geeksproject
+    app: geeksprofile
   ports:
     - protocol: TCP
       port: 8080
@@ -166,6 +166,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: geeksproject-service
+                name: geeksprofile-service
                 port:
                   number: 8080
