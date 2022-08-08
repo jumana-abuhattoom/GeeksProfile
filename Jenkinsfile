@@ -6,14 +6,14 @@ pipeline{
 		stage('Build') {
 
 			steps {
-				sh 'sudo docker build -t jumanaah/geeksproject:latest .'
+				sh 'sudo docker build -t jumanaah/geeksprofile:latest .'
 			}
 		}
 
 		stage('Push') {
 
 			steps {
-				sh 'sudo docker push jumanaah/geeksproject'
+				sh 'sudo docker push jumanaah/geeksprofile'
 			}
 		}
 	}
