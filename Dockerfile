@@ -3,7 +3,7 @@ FROM python
 RUN apt-get update && apt-get install -y python3-pip && apt install git && \
     apt-get install default-libmysqlclient-dev libssl-dev -y 
 
-RUN mkdir /geeksProfile
+RUN mkdir /geeksprofile
 
 # apt install libpython3.10 -y && 
 WORKDIR /geeksprofile
